@@ -7,6 +7,7 @@ from alembic import context
 
 from src.config import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME
 from src.cars_api.models import metadata as metadata_cars
+from src.user.models import metadata as metadata_user
 
 import os
 import sys
@@ -31,7 +32,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = [metadata_cars]
+target_metadata = [metadata_cars, metadata_user]
 
 
 # other values from the config, defined by the needs of env.py,

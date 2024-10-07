@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi_cache.decorator import cache
+
 from sqlalchemy import select, and_, cast, Numeric, func, Float
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession as As
@@ -6,11 +8,36 @@ from sqlalchemy.ext.asyncio import AsyncSession as As
 from src.cars_api.models import Cars
 from src.cars_api.shema import UpdateCar, CreateCar
 from src.database import get_async_session
+from fastapi_users import FastAPIUsers
+
+
+from src.user.auth import auth_backend
+from src.user.manager import get_user_manager
+from src.user.models import User
+
+
+
+
+
+
+
+
 
 router = APIRouter(
     prefix="/cars",
     tags=["Cars"]
 )
+
+##############################################################################
+""" Зависимости для авторизации"""
+fastapi_users = FastAPIUsers[User, int](
+    get_user_manager,
+    [auth_backend],
+)
+current_active_user = fastapi_users.current_user(active=True)
+
+
+###############################################################################
 
 
 async def get_car_by_id(car_id: int, session: As = Depends(get_async_session)):
@@ -30,7 +57,6 @@ async def add_car(car: CreateCar, session: As = Depends(get_async_session)):
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500,
                             detail={"error": "Ошибка базы данных"})
-
 
 
 @router.get("/")
@@ -101,16 +127,16 @@ async def get_cars(brand: str | None = None,
                             detail={"error": "Ошибка базы данных"})
 
 
-
 @router.get("/{car_id:int}")
-async def get_car_id(car_id: int, session: As = Depends(get_async_session)):
+@cache(expire=60)
+async def get_car_id(car_id: int, session: As = Depends(get_async_session),
+                     user: User = Depends(current_active_user)):
     try:
         car = await get_car_by_id(car_id, session)
         return car
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500,
                             detail={"error": "Ошибка базы данных"})
-
 
 
 @router.delete("/{car_id: int}")
